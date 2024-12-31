@@ -35,12 +35,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Debug secrets to ensure they are correctly set
-      - name: Debug secrets
+      # Debug environment variables to ensure they are correctly passed
+      - name: Debug environment variables
         run: |
           echo "HOST: $HOST"
           echo "USERNAME: $USERNAME"
           echo "PRIVATE_KEY: $PRIVATE_KEY"
+        env:
+          HOST: ${{ secrets.HOST }}
+          USERNAME: ${{ secrets.USERNAME }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+
+      # Test SSH Connection
+      - name: Test SSH Connection
+        run: |
+          ssh -v -o StrictHostKeyChecking=no -i learnwithkru.pem $USERNAME@$HOST echo "SSH connection successful"
         env:
           HOST: ${{ secrets.HOST }}
           USERNAME: ${{ secrets.USERNAME }}
@@ -53,11 +62,8 @@ jobs:
           USERNAME: ${{ secrets.USERNAME }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
         run: |
-          # Create the PEM file with the private key
           echo "${{ secrets.PRIVATE_KEY }}" > learnwithkru.pem
           chmod 600 learnwithkru.pem
-          
-          # SSH into the server and perform deployment tasks
           ssh -v -o StrictHostKeyChecking=no -i learnwithkru.pem $USERNAME@$HOST << EOF
             pm2 stop all || true
             cd /path/to/your/project
@@ -65,6 +71,4 @@ jobs:
             npm install --production
             pm2 start app.js
           EOF
-
-          # Clean up the private key after deployment
           rm learnwithkru.pem
