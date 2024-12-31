@@ -1,4 +1,5 @@
 name: CI/CD Pipeline
+
 on:
   push:
     branches:
@@ -6,48 +7,64 @@ on:
   pull_request:
     branches:
       - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the repository
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Set up Node.js
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 16
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
 
-    # Install dependencies
-    - name: Install dependencies
-      run: npm install
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    # Checkout the repository
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Deploy to the server
-    - name: Deploy to Server
-      env:
-        HOST: ${{ secrets.HOST }}
-        USERNAME: ${{ secrets.USERNAME }}
-        PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-      run: |
-        echo "${{ secrets.PRIVATE_KEY }}" > learnwithkru.pem
-        chmod 600 learnwithkru.pem
-        ssh -v -o StrictHostKeyChecking=no -i learnwithkru.pem $USERNAME@$HOST << EOF
-          pm2 stop all || true
-          cd /path/to/your/project
-          git pull origin main
-          npm install --production
-          pm2 start app.js
-        EOF
-        rm learnwithkru.pem
+      # Debug secrets to ensure they are correctly set
+      - name: Debug secrets
+        run: |
+          echo "HOST: $HOST"
+          echo "USERNAME: $USERNAME"
+          echo "PRIVATE_KEY: $PRIVATE_KEY"
+        env:
+          HOST: ${{ secrets.HOST }}
+          USERNAME: ${{ secrets.USERNAME }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 
+      # Deploy to the server
+      - name: Deploy to Server
+        env:
+          HOST: ${{ secrets.HOST }}
+          USERNAME: ${{ secrets.USERNAME }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: |
+          # Create the PEM file with the private key
+          echo "${{ secrets.PRIVATE_KEY }}" > learnwithkru.pem
+          chmod 600 learnwithkru.pem
+          
+          # SSH into the server and perform deployment tasks
+          ssh -v -o StrictHostKeyChecking=no -i learnwithkru.pem $USERNAME@$HOST << EOF
+            pm2 stop all || true
+            cd /path/to/your/project
+            git pull origin main
+            npm install --production
+            pm2 start app.js
+          EOF
+
+          # Clean up the private key after deployment
+          rm learnwithkru.pem
